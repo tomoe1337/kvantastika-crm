@@ -2,6 +2,14 @@
 
 return [
 
+    'webhook' => [
+        'secret' => env('WEBHOOK_SECRET'),
+    ],
+
+    'mock_api' => [
+        'url' => env('MOCK_API_URL', 'http://app:8000'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
