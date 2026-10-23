@@ -1,0 +1,24 @@
+# Local environment and secrets
+**/.env
+**/.env.*
+!**/.env.example
+
+# Runtime dependencies and build output
+**/vendor/
+**/node_modules/
+**/dist/
+**/build/
+
+# Laravel runtime files
+backend/database/*.sqlite
+backend/storage/logs/*
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/storage/app/private/*
+backend/storage/app/public/*
+backend/bootstrap/cache/*.php
+
+# Local tooling
+.DS_Store
+*.log
