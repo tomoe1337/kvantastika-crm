@@ -11,6 +11,11 @@ use Throwable;
 
 class ExternalDealSyncService
 {
+    public function __construct(
+        private readonly ApplyExternalDealState $applier,
+        private readonly MockApiRateLimiter $rateLimiter,
+    ) {}
+
     public function run(int $operationId): void
     {
         $operation = DB::transaction(function () use ($operationId): ?SyncOperation {
@@ -34,7 +39,7 @@ class ExternalDealSyncService
             return $operation->load('deal');
         });
 
-        if (! $operation || ! $operation->deal?->external_id) {
+        if ($operation === null || $operation->deal?->external_id === null) {
             return;
         }
 
@@ -86,7 +91,7 @@ class ExternalDealSyncService
                 return;
             }
 
-            $result = app(ApplyExternalDealState::class)->apply($external);
+            $result = $this->applier->apply($external);
             $outcome = match ($result['outcome']) {
                 'applied' => 'applied',
                 'ignored_stale' => 'ignored_stale',
@@ -101,6 +106,8 @@ class ExternalDealSyncService
                 'finished_at' => now(),
                 'last_error' => null,
             ])->save();
+
+            $this->resetRateLimit($operation);
         } catch (RetryableExternalResponse $exception) {
             throw $exception;
         } catch (Throwable $exception) {
@@ -116,5 +123,16 @@ class ExternalDealSyncService
             'last_error' => $message,
             'finished_at' => now(),
         ])->save();
+
+        $this->resetRateLimit($operation);
+    }
+
+    private function resetRateLimit(SyncOperation $operation): void
+    {
+        $externalId = $operation->deal?->external_id;
+
+        if ($operation->mode === 'rate_limit' && $externalId !== null) {
+            $this->rateLimiter->reset($externalId);
+        }
     }
 }

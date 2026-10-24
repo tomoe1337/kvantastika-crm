@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\SyncOperation;
 use App\Services\ExternalDealSyncService;
+use App\Services\MockApiRateLimiter;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -49,5 +50,11 @@ class SyncDealFromExternalCrm implements ShouldQueue
                 : 'External CRM synchronization failed.',
             'finished_at' => now(),
         ])->save();
+
+        $externalId = $operation->deal?->external_id;
+
+        if ($operation->mode === 'rate_limit' && $externalId !== null) {
+            app(MockApiRateLimiter::class)->reset($externalId);
+        }
     }
 }

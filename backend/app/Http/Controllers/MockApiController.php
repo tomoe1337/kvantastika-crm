@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\MockDeal;
+use App\Services\MockApiRateLimiter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class MockApiController extends Controller
 {
+    public function __construct(private readonly MockApiRateLimiter $rateLimiter) {}
+
     public function show(Request $request, string $externalId): JsonResponse
     {
         $validated = $request->validate([
@@ -21,9 +23,7 @@ class MockApiController extends Controller
         }
 
         if ($mode === 'rate_limit') {
-            $key = $this->rateLimitKey($externalId);
-            Cache::add($key, 0, now()->addDay());
-            $attempt = Cache::increment($key);
+            $attempt = $this->rateLimiter->hit($externalId);
 
             if ($attempt <= 2) {
                 return response()->json([
@@ -82,13 +82,8 @@ class MockApiController extends Controller
 
     public function reset(string $externalId): JsonResponse
     {
-        Cache::forget($this->rateLimitKey($externalId));
+        $this->rateLimiter->reset($externalId);
 
         return response()->json(['status' => 'reset', 'id' => $externalId]);
-    }
-
-    private function rateLimitKey(string $externalId): string
-    {
-        return 'mock-api:rate-limit:'.sha1($externalId);
     }
 }

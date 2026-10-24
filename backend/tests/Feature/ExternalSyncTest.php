@@ -7,6 +7,7 @@ use App\Jobs\SyncDealFromExternalCrm;
 use App\Models\Deal;
 use App\Models\SyncOperation;
 use App\Services\ExternalDealSyncService;
+use App\Services\MockApiRateLimiter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -163,6 +164,70 @@ class ExternalSyncTest extends TestCase
             'outcome' => 'conflict',
             'external_version' => 5,
         ]);
+    }
+
+    public function test_rate_limit_counter_resets_after_successful_operation(): void
+    {
+        $deal = $this->makeDeal();
+        $operation = $this->makeOperation($deal, 'rate_limit');
+        $limiter = app(MockApiRateLimiter::class);
+
+        $this->assertSame(1, $limiter->hit('external-1'));
+        $this->assertSame(2, $limiter->hit('external-1'));
+
+        Http::fake([
+            '*' => Http::response([
+                'id' => 'external-1',
+                'version' => 2,
+                'updated_at' => '2026-10-16T10:00:00Z',
+                'title' => 'New external title',
+                'status' => 'WON',
+                'amount' => 30000,
+            ], 200),
+        ]);
+
+        app(ExternalDealSyncService::class)->run($operation->id);
+
+        $this->assertDatabaseHas('sync_operations', [
+            'id' => $operation->id,
+            'status' => 'succeeded',
+        ]);
+        $this->assertSame(1, $limiter->hit('external-1'));
+    }
+
+    public function test_rate_limit_counter_resets_after_failed_operation(): void
+    {
+        $deal = $this->makeDeal();
+        $operation = $this->makeOperation($deal, 'rate_limit');
+        $limiter = app(MockApiRateLimiter::class);
+
+        $this->assertSame(1, $limiter->hit('external-1'));
+        $this->assertSame(2, $limiter->hit('external-1'));
+
+        Http::preventStrayRequests();
+        Http::fakeSequence()
+            ->push(['message' => 'unavailable'], 500)
+            ->push(['message' => 'unavailable'], 500)
+            ->push(['message' => 'unavailable'], 500);
+
+        $sync = app(ExternalDealSyncService::class);
+        $lastException = null;
+
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            try {
+                $sync->run($operation->id);
+            } catch (RetryableExternalResponse $exception) {
+                $lastException = $exception;
+            }
+        }
+
+        (new SyncDealFromExternalCrm($operation->id))->failed($lastException);
+
+        $this->assertDatabaseHas('sync_operations', [
+            'id' => $operation->id,
+            'status' => 'failed',
+        ]);
+        $this->assertSame(1, $limiter->hit('external-1'));
     }
 
     private function makeDeal(int $version = 1): Deal
