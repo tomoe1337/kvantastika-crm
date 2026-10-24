@@ -132,6 +132,39 @@ class ExternalSyncTest extends TestCase
         ]);
     }
 
+    public function test_same_version_get_conflict_preserves_local_edits(): void
+    {
+        $deal = $this->makeDeal(version: 5);
+        $operation = $this->makeOperation($deal, 'success');
+
+        Http::fake([
+            '*' => Http::response([
+                'id' => 'external-1',
+                'version' => 5,
+                'updated_at' => '2026-10-16T10:00:00Z',
+                'title' => 'External title at same version',
+                'status' => 'WON',
+                'amount' => 52000,
+            ], 200),
+        ]);
+
+        app(ExternalDealSyncService::class)->run($operation->id);
+
+        $this->assertDatabaseHas('deals', [
+            'id' => $deal->id,
+            'title' => 'Local title',
+            'status' => 'NEW',
+            'amount' => '49000.00',
+            'external_version' => 5,
+        ]);
+        $this->assertDatabaseHas('sync_operations', [
+            'id' => $operation->id,
+            'status' => 'succeeded',
+            'outcome' => 'conflict',
+            'external_version' => 5,
+        ]);
+    }
+
     private function makeDeal(int $version = 1): Deal
     {
         return Deal::query()->create([

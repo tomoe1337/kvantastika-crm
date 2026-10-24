@@ -75,6 +75,16 @@ docker compose exec app php artisan test
 docker compose exec frontend npm run build
 ```
 
+Пять сценариев из задания сопоставлены с автоматическими тестами:
+
+| № | Сценарий | Проверка |
+|---|---|---|
+| 1 | Дубликат `event_id` применяется один раз | `WebhookTest::test_duplicate_event_id_is_saved_and_applied_once` |
+| 2 | Старая внешняя версия не перезаписывает новую | `WebhookTest::test_older_webhook_is_recorded_but_does_not_overwrite_newer_deal`, `ExternalSyncTest::test_stale_get_response_is_successfully_ignored` |
+| 3 | `429, 429, 200` завершается успешной синхронизацией | `MockApiTest::test_rate_limit_mode_returns_two_429_responses_then_a_stable_success`, `ExternalSyncTest::test_two_rate_limits_then_success_updates_deal_on_third_attempt` |
+| 4 | Постоянный `500` завершается конечной ошибкой после трёх попыток | `ExternalSyncTest::test_permanent_server_errors_end_in_a_terminal_failure_after_three_attempts` |
+| 5 | Локальная правка сохраняется при конфликте с равной внешней версией | `WebhookTest::test_equal_version_with_different_values_preserves_local_edits`, `ExternalSyncTest::test_same_version_get_conflict_preserves_local_edits` |
+
 ## Архитектурные решения
 
 См. [docs/architecture.md](docs/architecture.md) — границы компонентов, политика внешних версий и локальных изменений, идемпотентность webhook и статусы фоновых операций.
