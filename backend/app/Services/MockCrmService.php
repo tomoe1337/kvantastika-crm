@@ -8,12 +8,13 @@ class MockCrmService
 {
     public function __construct(private readonly MockApiRateLimiter $rateLimiter) {}
 
-    /** @return array{status: int, body: array, headers: array<string, string>} */
+    /** @return array{status: int, deal: MockDeal|null, body: array, headers: array<string, string>} */
     public function read(string $externalId, string $mode): array
     {
         if ($mode === 'server_error') {
             return [
                 'status' => 500,
+                'deal' => null,
                 'body' => ['message' => 'Mock CRM is temporarily unavailable.'],
                 'headers' => [],
             ];
@@ -25,6 +26,7 @@ class MockCrmService
             if ($attempt <= 2) {
                 return [
                     'status' => 429,
+                    'deal' => null,
                     'body' => [
                         'message' => 'Mock CRM rate limit. Retry the request.',
                         'attempt' => $attempt,
@@ -39,17 +41,18 @@ class MockCrmService
         if ($deal === null) {
             return [
                 'status' => 404,
+                'deal' => null,
                 'body' => ['message' => 'Mock deal not found.'],
                 'headers' => [],
             ];
         }
 
-        return ['status' => 200, 'body' => $this->serialize($deal), 'headers' => []];
+        return ['status' => 200, 'deal' => $deal, 'body' => [], 'headers' => []];
     }
 
-    public function update(string $externalId, array $data): array
+    public function update(string $externalId, array $data): MockDeal
     {
-        $deal = MockDeal::query()->updateOrCreate(
+        return MockDeal::query()->updateOrCreate(
             ['external_id' => $externalId],
             [
                 'version' => $data['version'],
@@ -59,24 +62,10 @@ class MockCrmService
                 'amount' => $data['amount'],
             ],
         );
-
-        return $this->serialize($deal);
     }
 
     public function reset(string $externalId): void
     {
         $this->rateLimiter->reset($externalId);
-    }
-
-    private function serialize(MockDeal $deal): array
-    {
-        return [
-            'id' => $deal->external_id,
-            'version' => $deal->version,
-            'updated_at' => $deal->external_updated_at?->toISOString(),
-            'title' => $deal->title,
-            'status' => $deal->status,
-            'amount' => (float) $deal->amount,
-        ];
     }
 }

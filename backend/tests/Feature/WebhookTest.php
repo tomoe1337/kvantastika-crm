@@ -95,6 +95,22 @@ class WebhookTest extends TestCase
         $this->assertDatabaseCount('webhook_events', 0);
     }
 
+    public function test_deal_detail_returns_webhook_status_without_raw_payload(): void
+    {
+        $this->postJson('/api/webhooks/deals', $this->payload('evt-resource', 2, 'Resource title'), $this->token())
+            ->assertAccepted();
+
+        $deal = Deal::query()->where('external_id', 'deal-1')->firstOrFail();
+
+        $this->getJson("/api/deals/{$deal->id}")
+            ->assertOk()
+            ->assertJsonPath('deal.external_id', 'deal-1')
+            ->assertJsonPath('webhook_events.0.event_id', 'evt-resource')
+            ->assertJsonPath('webhook_events.0.status', 'applied')
+            ->assertJsonMissingPath('webhook_events.0.payload')
+            ->assertJsonMissingPath('webhook_events.0.external_id');
+    }
+
     private function payload(string $eventId, int $version, string $title): array
     {
         return [

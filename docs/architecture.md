@@ -14,6 +14,7 @@
 - Middleware `webhook.token` проверяет общий секрет до вызова контроллера.
 - Контроллеры отвечают только за HTTP-статус и формат ответа.
 - Сервисы (`DealService`, `WebhookIngestionService`, `StartDealSyncService`, `MockCrmService`) содержат прикладные сценарии.
+- API Resources (`DealResource`, `SyncOperationResource`, `WebhookEventResource`, `MockDealResource`) формируют JSON-представление и не отдают лишние поля, например сырой payload webhook.
 - `ApplyExternalDealState`, `ExternalDealSyncService` и `MockApiRateLimiter` инкапсулируют правила версий, конфликтов, повторов и ограничений mock API.
 
 ## Версии внешней CRM и конфликт данных

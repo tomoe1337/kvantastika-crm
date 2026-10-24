@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StartDealSyncRequest;
+use App\Http\Resources\SyncOperationResource;
 use App\Models\Deal;
 use App\Services\StartDealSyncService;
 use Illuminate\Http\JsonResponse;
@@ -17,7 +18,7 @@ class RefreshDealController extends Controller
         $result = $this->sync->start($deal, $request->validated('mode') ?? 'success');
 
         return response()->json([
-            'operation' => $result['operation'],
+            'operation' => new SyncOperationResource($result['operation']),
             'already_running' => $result['created'] === false,
         ], $result['created'] ? 202 : 200);
     }
