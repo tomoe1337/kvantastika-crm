@@ -21,9 +21,7 @@ class ProcessWebhookEvent implements ShouldQueue
 
     public int $tries = 3;
 
-    public function __construct(public readonly int $eventId)
-    {
-    }
+    public function __construct(public readonly int $eventId) {}
 
     public function backoff(): array
     {
@@ -35,7 +33,7 @@ class ProcessWebhookEvent implements ShouldQueue
         $event = DB::transaction(function (): ?WebhookEvent {
             $event = WebhookEvent::query()->lockForUpdate()->find($this->eventId);
 
-            if (! $event || in_array($event->status, ['applied', 'ignored', 'failed'], true)) {
+            if ($event === null || in_array($event->status, ['applied', 'ignored', 'failed'], true)) {
                 return null;
             }
 
@@ -51,7 +49,7 @@ class ProcessWebhookEvent implements ShouldQueue
             return $event;
         });
 
-        if (! $event) {
+        if ($event === null) {
             return;
         }
 
@@ -67,7 +65,7 @@ class ProcessWebhookEvent implements ShouldQueue
             DB::transaction(function () use ($event, $outcome): void {
                 $current = WebhookEvent::query()->lockForUpdate()->find($event->id);
 
-                if (! $current || $current->status === 'failed') {
+                if ($current === null || $current->status === 'failed') {
                     return;
                 }
 

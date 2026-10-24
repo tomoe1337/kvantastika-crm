@@ -1,12 +1,12 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
 use App\Jobs\ProcessWebhookEvent;
 use App\Jobs\SyncDealFromExternalCrm;
 use App\Models\SyncOperation;
 use App\Models\WebhookEvent;
+use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Artisan;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

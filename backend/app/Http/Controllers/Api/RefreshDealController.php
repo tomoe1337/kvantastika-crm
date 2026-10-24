@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Jobs\SyncDealFromExternalCrm;
 use App\Models\Deal;
-use App\Models\SyncOperation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +18,7 @@ class RefreshDealController extends Controller
             'mode' => ['nullable', 'in:success,rate_limit,server_error'],
         ]);
 
-        if (! $deal->external_id) {
+        if ($deal->external_id === null) {
             return response()->json(['message' => 'This deal has no external CRM id.'], 422);
         }
 

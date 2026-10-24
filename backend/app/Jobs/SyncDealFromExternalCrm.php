@@ -20,9 +20,7 @@ class SyncDealFromExternalCrm implements ShouldQueue
 
     public int $tries = 3;
 
-    public function __construct(public readonly int $operationId)
-    {
-    }
+    public function __construct(public readonly int $operationId) {}
 
     public function backoff(): array
     {
@@ -38,7 +36,7 @@ class SyncDealFromExternalCrm implements ShouldQueue
     {
         $operation = SyncOperation::query()->find($this->operationId);
 
-        if (! $operation || in_array($operation->status, ['succeeded', 'failed'], true)) {
+        if ($operation === null || in_array($operation->status, ['succeeded', 'failed'], true)) {
             return;
         }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Deal;
+use App\Models\WebhookEvent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -20,7 +21,7 @@ class DealController extends Controller
 
         $query = Deal::query()->with('latestSyncOperation');
 
-        if (! empty($filters['q'])) {
+        if (empty($filters['q']) === false) {
             $term = mb_strtolower(trim($filters['q']));
             $pattern = '%'.$term.'%';
 
@@ -30,7 +31,7 @@ class DealController extends Controller
             });
         }
 
-        if (! empty($filters['status'])) {
+        if (empty($filters['status']) === false) {
             $query->where('status', $filters['status']);
         }
 
@@ -65,7 +66,7 @@ class DealController extends Controller
             'deal' => $deal,
             'sync_operations' => $deal->syncOperations()->latest()->limit(5)->get(),
             'webhook_events' => $deal->external_id
-                ? \App\Models\WebhookEvent::query()->where('external_id', $deal->external_id)->latest()->limit(5)->get()
+                ? WebhookEvent::query()->where('external_id', $deal->external_id)->latest()->limit(5)->get()
                 : [],
         ]);
     }
