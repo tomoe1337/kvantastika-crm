@@ -14,6 +14,7 @@
 Требуются Docker Engine и Docker Compose.
 
 ```bash
+cp .env.example .env
 cp backend/.env.example backend/.env
 docker compose build
 docker compose run --rm --no-deps app php artisan key:generate
@@ -35,6 +36,24 @@ docker compose exec app php artisan db:seed --force
 Остановить сервисы: `docker compose down`. Данные PostgreSQL хранятся в именованном volume и переживают остановку контейнеров. Для полного сброса локальной базы используйте `docker compose down -v`.
 
 Vite проксирует `/api` и `/mock-api` к Laravel-контейнеру, поэтому браузер использует один origin и локально не требует настройки CORS.
+
+## Переменные окружения и порты
+
+Docker Compose читает `.env` из корня проекта. Локальный `.env` не коммитится; шаблон находится в `.env.example`.
+
+| Переменная | Назначение | Значение по умолчанию |
+|---|---|---|
+| `POSTGRES_DB` | Имя базы PostgreSQL | `kvantastika` |
+| `POSTGRES_USER` | Пользователь PostgreSQL | `kvantastika` |
+| `POSTGRES_PASSWORD` | Пароль PostgreSQL | `kvantastika` |
+| `APP_PORT` | Порт Laravel API на хосте | `8000` |
+| `FRONTEND_PORT` | Порт frontend на хосте | `5173` |
+
+Эти же значения `POSTGRES_*` подставляются в `DB_DATABASE`, `DB_USERNAME` и `DB_PASSWORD` контейнеров `app` и `worker`, поэтому Laravel и PostgreSQL остаются согласованными. Внутренние порты контейнеров не меняются; переменные `APP_PORT` и `FRONTEND_PORT` влияют только на публикацию на хосте. `APP_URL` автоматически получает выбранный `APP_PORT`.
+
+Файл `backend/.env` хранит настройки Laravel: `APP_KEY`, `WEBHOOK_SECRET`, `MOCK_API_URL` и локальные параметры. Для контейнеров инфраструктурные значения из корневого `.env` имеют приоритет над `backend/.env`.
+
+Если сменить `POSTGRES_PASSWORD` после первого запуска, существующий volume сохранит старый пароль. Для локального сброса используйте `docker compose down -v` (данные будут удалены) либо смените пароль в самой базе. Пароль по умолчанию предназначен только для локальной демонстрации. Не добавляйте `.env` в Git.
 
 ## Реализованные сценарии
 

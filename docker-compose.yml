@@ -10,13 +10,13 @@ services:
     environment: &laravel-environment
       APP_ENV: local
       APP_DEBUG: "true"
-      APP_URL: http://localhost:8000
+      APP_URL: http://localhost:${APP_PORT:-8000}
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: "5432"
-      DB_DATABASE: kvantastika
-      DB_USERNAME: kvantastika
-      DB_PASSWORD: kvantastika
+      DB_DATABASE: ${POSTGRES_DB:-kvantastika}
+      DB_USERNAME: ${POSTGRES_USER:-kvantastika}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-kvantastika}
       CACHE_STORE: redis
       SESSION_DRIVER: file
       QUEUE_CONNECTION: redis
@@ -28,7 +28,7 @@ services:
       - ./backend:/var/www/html
       - backend_vendor:/var/www/html/vendor
     ports:
-      - "8000:8000"
+      - "${APP_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -62,13 +62,13 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: kvantastika
-      POSTGRES_USER: kvantastika
-      POSTGRES_PASSWORD: kvantastika
+      POSTGRES_DB: ${POSTGRES_DB:-kvantastika}
+      POSTGRES_USER: ${POSTGRES_USER:-kvantastika}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kvantastika}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kvantastika -d kvantastika"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kvantastika} -d ${POSTGRES_DB:-kvantastika}"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -93,7 +93,7 @@ services:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
     ports:
-      - "5173:5173"
+      - "${FRONTEND_PORT:-5173}:5173"
     depends_on:
       - app
     restart: unless-stopped
