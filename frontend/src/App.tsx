@@ -10,6 +10,7 @@ import {
   type DealDetail,
   type DealInput,
   type SyncMode,
+  type SyncOperation,
 } from './api'
 import './App.css'
 
@@ -32,6 +33,43 @@ const outcomeNames: Record<string, string> = {
   conflict: 'Конфликт версии — локальные данные сохранены',
   unchanged: 'Данные не изменились',
   failed: 'Не удалось обновить данные',
+}
+
+function failureMessage(error: string | null): string {
+  if (!error) return 'Не удалось обновить данные. Попробуйте позже.'
+
+  if (error.includes('HTTP 404')) {
+    return 'Внешняя CRM не нашла сделку с таким external ID (HTTP 404). Проверьте ID или добавьте данные в mock API.'
+  }
+  if (error.includes('HTTP 429')) {
+    return 'Внешняя CRM ограничила частоту запросов (HTTP 429). Все повторы исчерпаны.'
+  }
+  if (error.includes('HTTP 5')) {
+    return 'Внешняя CRM временно недоступна (HTTP 5xx). Все повторы исчерпаны.'
+  }
+  if (error.includes('invalid deal payload')) {
+    return 'Внешняя CRM вернула некорректные данные сделки.'
+  }
+  if (error.includes('different deal id')) {
+    return 'Внешняя CRM вернула данные другой сделки.'
+  }
+  if (error.includes('Queue dispatch failed')) {
+    return 'Не удалось поставить обновление в очередь. Попробуйте ещё раз.'
+  }
+
+  return error
+}
+
+function operationMessage(operation: SyncOperation): string {
+  if (operation.status === 'queued') return 'Запрос принят. Обновление ожидает в очереди.'
+  if (operation.status === 'running') {
+    return `Обновление выполняется. Попытка ${operation.attempts} из ${operation.max_attempts}.`
+  }
+  if (operation.status === 'failed') return failureMessage(operation.last_error)
+
+  return operation.outcome
+    ? outcomeNames[operation.outcome] ?? operation.outcome
+    : 'Обновление завершено.'
 }
 
 const defaultForm: DealInput = {
@@ -451,17 +489,15 @@ function App() {
                     </div>
                     {!selectedDeal.external_id && <p className="helper-text">Для синхронизации нужен внешний ID сделки.</p>}
                     {currentOperation && (
-                      <div className={`operation-state operation-${currentOperation.status}`} role="status">
+                      <div
+                        className={`operation-state operation-${currentOperation.status}`}
+                        role="status"
+                        title={currentOperation.last_error ?? undefined}
+                      >
                         <span className="operation-indicator" />
                         <div>
                           <strong>{operationNames[currentOperation.status] ?? currentOperation.status}</strong>
-                          <span>
-                            {currentOperation.outcome
-                              ? outcomeNames[currentOperation.outcome] ?? currentOperation.outcome
-                              : currentOperation.status === 'failed'
-                                ? currentOperation.last_error ?? 'Операция завершилась ошибкой'
-                                : `Попытка ${currentOperation.attempts} из ${currentOperation.max_attempts}`}
-                          </span>
+                          <span>{operationMessage(currentOperation)}</span>
                         </div>
                       </div>
                     )}
