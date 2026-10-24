@@ -10,4 +10,5 @@ Route::post('/deals', [DealController::class, 'store']);
 Route::get('/deals/{deal}', [DealController::class, 'show']);
 Route::patch('/deals/{deal}', [DealController::class, 'update']);
 Route::post('/deals/{deal}/refresh', [RefreshDealController::class, 'store']);
-Route::post('/webhooks/deals', [WebhookController::class, 'store']);
+Route::post('/webhooks/deals', [WebhookController::class, 'store'])
+    ->middleware('webhook.token');
