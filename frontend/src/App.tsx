@@ -498,6 +498,11 @@ function App() {
                         <div>
                           <strong>{operationNames[currentOperation.status] ?? currentOperation.status}</strong>
                           <span>{operationMessage(currentOperation)}</span>
+                          {currentOperation.attempts > 0 && (
+                            <span className="operation-attempts">
+                              Попытка {currentOperation.attempts} из {currentOperation.max_attempts}
+                            </span>
+                          )}
                         </div>
                       </div>
                     )}

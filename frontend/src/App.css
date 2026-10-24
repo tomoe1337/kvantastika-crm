@@ -134,6 +134,7 @@ td { height: 62px; padding: 8px 12px; border-top: 1px solid #eef1ee; color: var(
 .operation-state strong, .operation-state span:not(.operation-indicator) { display: block; }
 .operation-state strong { color: var(--ink); font-size: 10px; }
 .operation-state div > span { margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.4; overflow-wrap: anywhere; }
+.operation-state .operation-attempts { margin-top: 4px; color: #7b8780; font-size: 8px; letter-spacing: 0.02em; }
 .history-section { margin-top: 16px; border-top: 1px solid var(--line); }
 .history-count { min-width: 19px; height: 19px; margin: 0; font-size: 9px; }
 .history-empty { margin: 13px 0 0; color: var(--muted); font-size: 10px; }
