@@ -166,6 +166,21 @@ class ExternalSyncTest extends TestCase
         ]);
     }
 
+    public function test_refresh_requires_an_external_id(): void
+    {
+        $deal = Deal::query()->create([
+            'external_id' => null,
+            'title' => 'Local-only deal',
+            'status' => 'NEW',
+            'amount' => '1000.00',
+            'external_version' => 0,
+        ]);
+
+        $this->postJson("/api/deals/{$deal->id}/refresh")
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'This deal has no external CRM id.');
+    }
+
     public function test_rate_limit_counter_resets_after_successful_operation(): void
     {
         $deal = $this->makeDeal();
